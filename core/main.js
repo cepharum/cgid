@@ -28,8 +28,6 @@ var OS       = require( "os_tools" );
 
 // ----------------------------------------------------------------------------
 
-function nop() {};
-
 /**
  * Maps pathname of a request's URL into absolute pathname of local file.
  *
@@ -306,14 +304,17 @@ OS.normalizeRunAsUser( function( runAsUser )
 									response.write( data.substr( splitPoint + split.length ) );
 
 									// adjust grabber reference to stop grabbing any further
-									headerCollector = nop;
+									headerCollector = false;
 
 									// and pipe all succeeding output of script into response directly
 									script.stdout.pipe( response );
 								}
 							};
 
-							script.stdout.on( "data", function( chunk ) { headerCollector( chunk ); } );
+							script.stdout.on( "data", function( chunk )
+							{
+								headerCollector && headerCollector( chunk );
+							} );
 
 
 							// add further informational log entries on script exiting
