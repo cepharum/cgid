@@ -64,6 +64,10 @@ There are versions for Linux, Mac OS X and Windows.
        ```
        $ chmod 0755 cgid-master/run.sh
        ```
+4. Derive configuration from provided template:
+       ```
+       $ cp cgid-master/node_modules/config.js.dist cgid-master/node_modules/config.js
+       ```
 4. Adjust runtime configuration to your needs (see below):
        ```
        $ nano cgid-master/node_modules/config.js
