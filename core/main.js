@@ -296,9 +296,10 @@ OS.normalizeRunAsUser( function( runAsUser )
 									} );
 
 									// set response header
-									var status = parseInt( headers.status );
+									var status = parseInt( headers.status ) || 200;
 									delete headers.status;
 
+									LOG.debug( "%s: script requests HTTP status %s", ctx.index, status );
 									response.writeHead( status, headers );
 
 									// send any optionally received body data
@@ -312,25 +313,25 @@ OS.normalizeRunAsUser( function( runAsUser )
 								}
 							};
 
-							script.stdout.on( "data", headerCollector );
+							script.stdout.on( "data", function( chunk ) { headerCollector( chunk ); } );
 
 
 							// add further informational log entries on script exiting
-							var exitCode = -1;
+							var exitCode = null;
 							var finished = false;
 
 							function logOnFinish( )
 							{
-								if ( exitCode >= 0 && finished )
+								if ( exitCode && finished )
 								{
-									LOG.info( "%s: script exited with %d", ctx.index, exitCode );
+									LOG.info( "%s: script exited with %d (signal %s)", ctx.index, exitCode[0], exitCode[1] );
 									LOG.debug( "%s: in %s, out %s", ctx.index, request.socket.bytesRead, request.socket.bytesWritten );
 								}
 							}
 
-							script.on( "close", function( code )
+							script.on( "exit", function( code, signal )
 							{
-								exitCode = code;
+								exitCode = [ code, signal ];
 								logOnFinish( );
 							} );
 
