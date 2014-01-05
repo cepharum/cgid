@@ -20,11 +20,12 @@ var FS       = require( "fs" );
 var URL      = require( "url" );
 var CHILD    = require( "child_process" );
 
-var CONFIG   = require( "config" );
-var LOG      = require( "log" );
-var REWRITE  = require( "rewrite" );
-var REDIRECT = require( "redirect" );
-var OS       = require( "os_tools" );
+var CONFIG      = require( "config" );
+var LOG         = require( "log" );
+var REWRITE     = require( "rewrite" );
+var REDIRECT    = require( "redirect" );
+var OS          = require( "os_tools" );
+var HTTP_PARSER = require( "http_parser" );
 
 // ----------------------------------------------------------------------------
 
@@ -246,74 +247,30 @@ OS.normalizeRunAsUser( function( runAsUser )
 								} );
 							} );
 
-							// capture script's output on stdout for splitting into
-							// response's header and body reprocessing the former
-							// internally
-							var data = "";
-
-							var headerCollector = function( chunk )
+							var parser = HTTP_PARSER.createParser( true, function( headers )
 							{
-								data += chunk.toString();
+								// set response header
+								var status = parseInt( headers.status ) || 200;
+								delete headers.status;
 
-								// met end of header?
-								var split, splitPoint = data.indexOf( split = "\r\n\r\n" );
-								if ( splitPoint < 0 )
-								{
-									// try LF instead of CRLF ...
-									var splitPoint = data.indexOf( split = "\n\n" );
-								}
+								LOG.debug( "%s: script requests HTTP status %s", ctx.index, status );
+								response.writeHead( status, headers );
 
-								if ( splitPoint >= 0 )
-								{
-									// yes, met end of header
+								// parser might have collected some leading part of body
+								// -> don't miss to pass it to client
+								response.write( this.rawBody() );
 
-									// reparse header
-									var headers = {};
+								// and pipe all succeeding output of script into response directly
+								script.stdout.pipe( response );
 
-									data.substr( 0, splitPoint ).split( /\r?\n(?!\s)/ ).forEach( function( line, index )
-									{
-										var p = line.match( /^(\S+)\s*:\s*(.*)$/ );
-										if ( p )
-										{
-											var name = p[1].toLowerCase( );
-
-											var exist = headers[name];
-											switch ( typeof exist )
-											{
-												case "undefined" :
-													headers[name] = p[2];
-													break;
-												case "string" :
-													headers[name] = [exist, p[2]];
-													break;
-												case "object" :
-													exist.push( p[2] );
-													break;
-											}
-										}
-									} );
-
-									// set response header
-									var status = parseInt( headers.status ) || 200;
-									delete headers.status;
-
-									LOG.debug( "%s: script requests HTTP status %s", ctx.index, status );
-									response.writeHead( status, headers );
-
-									// send any optionally received body data
-									response.write( data.substr( splitPoint + split.length ) );
-
-									// adjust grabber reference to stop grabbing any further
-									headerCollector = false;
-
-									// and pipe all succeeding output of script into response directly
-									script.stdout.pipe( response );
-								}
-							};
+								// drop reference on parser as it won't be used
+								// for parsing anymore
+								parser = undefined;
+							} );
 
 							script.stdout.on( "data", function( chunk )
 							{
-								headerCollector && headerCollector( chunk );
+								parser && parser.feed( chunk );
 							} );
 
 
