@@ -98,3 +98,50 @@ querying and calculating your individual configuration.
 
 See the comments in that file to learn more about available
 configuration properties.
+
+### Example: GNU mailman
+
+Returning to initial motivation here comes example for setting up mailman web interface.
+
+The following example for `node_modules/config.js` prepares cgid to provide webinterface 
+of GNU mailman installed in `/var/lib/mailman`.
+
+       module.exports = {
+              webRoot : "/var/lib/mailman",
+              cgiRoot : "cgi-bin",
+              cgiPrefix : "/mailman",
+              runAsUser : "www-data",
+              enableHttps : false,
+              minLogLevel : "info",
+              // required for accessing archives
+              followSymlinks : true,
+              mimeTypes : {
+                         txt: "text/plain",
+                         html: "text/html",
+                         xhtml: "application/xhtml+xml",
+                         xml: "application/xml",
+                         xsl: "application/xslt+xml",
+                         js: "text/javascript",
+                         css: "text/css",
+                         jpg: "image/jpeg",
+                         jpeg: "image/jpeg",
+                         png: "image/png",
+                         gif: "image/gif",
+                         pdf: "application/pdf",
+                         zip: "application/zip"
+                         },
+              rewrites : [
+                     [ /^\/cgi-bin\/mailman\/(.+)$/, "/mailman/$1", true ],
+                     [ /^((\/cgi-bin)?\/mailman)?\/?$/, "/mailman/listinfo", true ],
+                     [ /^\/images\/mailman(.*)$/, "/icons$1", true ],
+                     [ /^\/pipermail(.*)$/, "/archives/public$1", true ],
+                     ]
+       };
+
+In addition URL format used by GNU mailman must be changed in file `/var/lib/mailman/Mailman/mm_cfg.py`. Replace the following options in that files accordingly:
+
+       DEFAULT_URL_PATTERN = 'http://%s/mailman/'
+       PRIVATE_ARCHIVE_URL = '/mailman/private'
+       IMAGE_LOGOS         = '/icons/'
+
+After restarting cgid and GNU mailman you're done and so you should be able to access web interface of your GNU mailman installation using the web browser of your choice.
