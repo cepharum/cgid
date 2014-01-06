@@ -142,7 +142,7 @@ OS.normalizeRunAsUser( function( runAsUser )
 			LOG.debug( "%s: %s is addressing resource in %s %s", ctx.index, url.pathname, ctx.blnExecute ? "cgiRoot" : "webRoot", basedir );
 
 			// look for matching file
-			RESOLVER.resolvePathname( basedir, url.pathname, !ctx.blnExecute, function( error, pathname, stat )
+			RESOLVER.resolvePathname( basedir, url.pathname, !ctx.blnExecute, function( error, pathname, stat, pathinfo )
 			{
 				if ( error || !pathname )
 				{
@@ -201,7 +201,7 @@ OS.normalizeRunAsUser( function( runAsUser )
 						stdio: "pipe",
 						env: {
 							CONTENT_LENGTH: request.headers["content-length"] || 0,
-							CONTENT_TYPE: request.headers["content-type"],
+							CONTENT_TYPE: request.headers["content-type"] || "application/octet-stream",
 							DOCUMENT_ROOT: CONFIG.webRoot || "/tmp",
 							GATEWAY_INTERFACE: "1.1",
 							HTTP_ACCEPT: request.headers["accept"],
@@ -213,9 +213,9 @@ OS.normalizeRunAsUser( function( runAsUser )
 							HTTP_HOST: request.headers["host"],
 							HTTP_REFERER: request.headers["referer"],
 							HTTP_USER_AGENT: request.headers["user-agent"],
-							PATH_INFO: url.pathname,
+							PATH_INFO: pathinfo,
 							PATH_TRANSLATED: pathname,
-							QUERY_STRING: url.query,
+							QUERY_STRING: url.query || "",
 							REMOTE_ADDRESS: request.socket.remoteAddress,
 							REMOTE_HOST: undefined,
 							REMOTE_IDENT: undefined,
@@ -224,14 +224,14 @@ OS.normalizeRunAsUser( function( runAsUser )
 							REQUEST_METHOD: request.method,
 							REQUEST_URI: request.originalUrl,
 							SCRIPT_FILENAME: pathname,
-							SCRIPT_NAME: url.pathname,
+							SCRIPT_NAME: CONFIG.cgiPrefix + "/" + PATH.relative( cgiRoot, pathname ).replace( /[\\]/g, "/" ),
 							SERVER_ADDR: request.socket.localAddress,
-							SERVER_ADMIN: undefined,
-							SERVER_NAME: undefined,
+							SERVER_ADMIN: CONFIG.envServerAdmin,
+							SERVER_NAME: CONFIG.envServerName,
 							SERVER_PORT: request.socket.localPort,
 							SERVER_PROTOCOL: "HTTP/" + request.httpVersion,
-							SERVER_SIGNATURE: undefined,
-							SERVER_SOFTWARE: undefined,
+							SERVER_SIGNATURE: CONFIG.envServerSignature,
+							SERVER_SOFTWARE: CONFIG.envServerSoftware,
 						}
 					} );
 
