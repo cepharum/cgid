@@ -26,13 +26,11 @@ my own solution relying on Node.JS, only. cgid is the result ...
 
 ### Performance
 
-At this stage of development I can't provide any benchmarking results though I've 
-tried my best to optimize code for speed. Node.JS is known to compete with 
-other thin web servers like nginx, though this comparison must be biased according
-to actually featured functionalities. I expect this cgid to perform better than
-any Apache-based setup. I don't know much about performance of nginx+thttpd, either.
-But that pairing requires useless interaction of two web servers wasting essential
-time.
+Occasional performance tests indicated sufficient performance of cgid by means of
+speed and size of memory footprint. While beating Apache in speed and in size 
+cgid won't ever compete with actually small memory footprint of proposed setups 
+combining nginx and thttpd, for sure. Thus, cgid might be an option if you are 
+running Ubuntu 12.04 missing package thttpd.
 
 
 ### Testing
@@ -106,42 +104,46 @@ Returning to initial motivation here comes example for setting up mailman web in
 The following example for `node_modules/config.js` prepares cgid to provide webinterface 
 of GNU mailman installed in `/var/lib/mailman`.
 
-       module.exports = {
-              webRoot : "/var/lib/mailman",
-              cgiRoot : "cgi-bin",
-              cgiPrefix : "/mailman",
-              runAsUser : "www-data",
-              enableHttps : false,
-              minLogLevel : "info",
-              // required for accessing archives
-              followSymlinks : true,
-              mimeTypes : {
-                         txt: "text/plain",
-                         html: "text/html",
-                         xhtml: "application/xhtml+xml",
-                         xml: "application/xml",
-                         xsl: "application/xslt+xml",
-                         js: "text/javascript",
-                         css: "text/css",
-                         jpg: "image/jpeg",
-                         jpeg: "image/jpeg",
-                         png: "image/png",
-                         gif: "image/gif",
-                         pdf: "application/pdf",
-                         zip: "application/zip"
-                         },
-              rewrites : [
-                     [ /^\/cgi-bin\/mailman\/(.+)$/, "/mailman/$1", true ],
-                     [ /^((\/cgi-bin)?\/mailman)?\/?$/, "/mailman/listinfo", true ],
-                     [ /^\/images\/mailman(.*)$/, "/icons$1", true ],
-                     [ /^\/pipermail(.*)$/, "/archives/public$1", true ],
-                     ]
-       };
+```javascript
+module.exports = {
+       webRoot : "/var/lib/mailman",
+       cgiRoot : "cgi-bin",
+       cgiPrefix : "/mailman",
+       runAsUser : "www-data",
+       enableHttps : false,
+       minLogLevel : "info",
+       // required for accessing archives
+       followSymlinks : true,
+       mimeTypes : {
+                  txt: "text/plain",
+                  html: "text/html",
+                  xhtml: "application/xhtml+xml",
+                  xml: "application/xml",
+                  xsl: "application/xslt+xml",
+                  js: "text/javascript",
+                  css: "text/css",
+                  jpg: "image/jpeg",
+                  jpeg: "image/jpeg",
+                  png: "image/png",
+                  gif: "image/gif",
+                  pdf: "application/pdf",
+                  zip: "application/zip"
+                  },
+       rewrites : [
+              [ /^\/cgi-bin\/mailman\/(.+)$/, "/mailman/$1", true ],
+              [ /^((\/cgi-bin)?\/mailman)?\/?$/, "/mailman/listinfo", true ],
+              [ /^\/images\/mailman(.*)$/, "/icons$1", true ],
+              [ /^\/pipermail(.*)$/, "/archives/public$1", true ],
+              ]
+};
+```
 
 In addition URL format used by GNU mailman must be changed in file `/var/lib/mailman/Mailman/mm_cfg.py`. Replace the following options in that files accordingly:
 
-       DEFAULT_URL_PATTERN = 'http://%s/mailman/'
-       PRIVATE_ARCHIVE_URL = '/mailman/private'
-       IMAGE_LOGOS         = '/icons/'
+```python
+DEFAULT_URL_PATTERN = 'http://%s/mailman/'
+PRIVATE_ARCHIVE_URL = '/mailman/private'
+IMAGE_LOGOS         = '/icons/'
+```
 
 After restarting cgid and GNU mailman you're done and so you should be able to access web interface of your GNU mailman installation using the web browser of your choice.
